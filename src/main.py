@@ -1,6 +1,9 @@
 import tkinter as tk
+from tkinter import filedialog
 from tkinter import messagebox
+from logger import Logger
 from editor import read_txt_file
+
 
 class MyApp:
     def __init__(self, root):
@@ -14,6 +17,7 @@ class MyApp:
         self.root.config(bg="#212121")
         self.root.attributes('-alpha', 0.7)
         self.root.resizable(0, 0)
+        self.logger = Logger("[Trader Manager]")  # Create an instance of the Logger class
         self.right_click_menu = tk.Menu(self.root, tearoff=0)
         self.right_click_menu.add_command(label="Fullscreen", command=self.toggle_fullscreen)
         self.right_click_menu.add_command(label="Close", command=self.close_app)
@@ -28,10 +32,23 @@ class MyApp:
         self.root.bind("<ButtonRelease-1>", self.stop_move)
         self.root.bind("<B1-Motion>", self.on_move)
         tk.Button(self.frame, text="Open Editor", font=button_font, command=self.open_editor).pack(pady=10)
+        
+        # Log application start
+        self.logger.log("Application started")
 
     def open_editor(self):
-        import editor
-        editor.read_txt_file()
+        file_path = filedialog.askopenfilename(
+            title="Open Text File",
+            filetypes=(("Text Files", "*.txt"), ("All Files", "*.*"))
+        )
+
+        if not file_path:
+            return
+
+        read_txt_file(file_path)
+
+        # Log opening of the editor with the specific file name
+        self.logger.log(f"Opened the editor with file: {file_path}")
 
     def start_move(self, event):
         self.x, self.y = event.x, event.y
@@ -59,11 +76,15 @@ class MyApp:
             self.root.attributes('-fullscreen', True)
         else:
             messagebox.showwarning("Error", "Cannot set full screen mode while the window border is removed.")
-
+            
     def close_app(self):
+        # Log application close
+        self.logger.log("Application closed")
         self.root.destroy()
 
 if __name__ == '__main__':
+    logger.log("Application started")
     root = tk.Tk()
     app = MyApp(root)
     root.mainloop()
+

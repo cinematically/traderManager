@@ -1,0 +1,2 @@
+[traderManager] | Time: 2023-05-11 16:05:54 | Application started
+[traderManager] | Time: 2023-05-11 16:05:58 | Opening editor
