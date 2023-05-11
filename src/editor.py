@@ -55,14 +55,32 @@ def read_txt_file(file_path):
 
     def save_edited_item(item, category, class_name, buy_price, sell_price):
         if item:
-            treeview.item(item, values=(category, class_name, buy_price, sell_price))
+            current_values = treeview.item(item)["values"]
+            updated_values = (category, class_name, buy_price, sell_price)
+            treeview.item(item, values=updated_values)
             messagebox.showinfo("Item Updated", "The item has been updated successfully.")
-
-            # Log the item update
-            logger.log(f"Item {item} updated - Category: {category}, Class: {class_name}, Buy Price: {buy_price}, Sell Price: {sell_price}")
+            updated_fields = []
+            previous_values = []
+            for i in range(len(current_values)):
+                if current_values[i] != updated_values[i]:
+                    updated_fields.append(treeview.heading(i)["text"])
+                    previous_values.append(current_values[i])
+                    previous_values.append(updated_values[i])
+            log_message = f"Item {class_name} updated - "
+            for field, prev_value, new_value in zip(updated_fields, previous_values[::2], previous_values[1::2]):
+                log_message += f"{field}: {new_value} (Previous: {prev_value}), "
+            log_message = log_message.rstrip(", ")
+            logger.log(log_message)
+            line_number = int(treeview.item(item, "text")) - 1
+            with open(file_path, "r+") as f:
+                lines = f.readlines()
+                if line_number < len(lines):
+                    lines[line_number] = f"{class_name}, , {buy_price}, {sell_price}\n"
+                    f.seek(0)
+                    f.writelines(lines)
+                    f.truncate()
         else:
             messagebox.showerror("Error", "An error occurred while updating the item.")
-
 
     def on_mousewheel(event):
         if event.delta > 0:

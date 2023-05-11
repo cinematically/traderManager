@@ -4,6 +4,7 @@ from tkinter import messagebox
 from logger import Logger
 from editor import read_txt_file
 
+logger = Logger("[Trader Manager]")
 
 class MyApp:
     def __init__(self, root):
@@ -87,4 +88,3 @@ if __name__ == '__main__':
     root = tk.Tk()
     app = MyApp(root)
     root.mainloop()
-

@@ -1,12 +1,14 @@
 import datetime
 
 class Logger:
-    def __init__(self):
-        self.log_file = "log.txt"
+    def __init__(self, prefix="[Application]"):
+        self.prefix = prefix
+        self.log_file = f"traderManager_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
 
     def log(self, message):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted_message = f"[traderManager] | Time: {timestamp} | {message}\n"
-        with open(self.log_file, "a") as f:
-            f.write(formatted_message)
-        print(formatted_message)
+        log_message = f"{self.prefix} | Time: {timestamp} | {message}"
+        print(log_message)
+
+        with open(self.log_file, "a") as file:
+            file.write(log_message + "\n")
