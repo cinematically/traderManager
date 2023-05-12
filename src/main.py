@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from logger import Logger
-from editor import read_txt_file
+from editor import Editor
 
 logger = Logger("[Trader Manager]")
 
@@ -10,7 +10,7 @@ class MyApp:
     def __init__(self, root):
         self.root = root
         self.root.title("My App")
-        self.root.overrideredirect(True)
+        self.root.overrideredirect(False)
         width, height = 400, 300
         x = (self.root.winfo_screenwidth() / 2) - (width / 2)
         y = (self.root.winfo_screenheight() / 2) - (height / 2)
@@ -26,7 +26,7 @@ class MyApp:
         self.frame = tk.Frame(self.root, bg="#424242")
         self.frame.pack(fill="both", expand=True)
         title_font, label_font, button_font = ("Segoe UI", 20, "bold"), ("Segoe UI", 12), ("Segoe UI", 12, "bold")
-        tk.Label(self.frame, text="Trader Manager ", font=title_font, fg="#FFFFFF", bg="#424242").pack(pady=20)
+        tk.Label(self.frame, text="Trader Manager", font=title_font, fg="#FFFFFF", bg="#424242").pack(pady=20)
         tk.Label(self.frame, text="the start of a journey..", font=label_font, fg="#FFFFFF", bg="#424242").pack(pady=10)
         self.x, self.y = None, None
         self.root.bind("<ButtonPress-1>", self.start_move)
@@ -37,6 +37,10 @@ class MyApp:
         # Log application start
         self.logger.log("Application started")
 
+    def read_txt_file(file_path, logger):
+        with open(file_path, 'r') as file:
+            content = file.read()
+
     def open_editor(self):
         file_path = filedialog.askopenfilename(
             title="Open Text File",
@@ -46,7 +50,8 @@ class MyApp:
         if not file_path:
             return
 
-        read_txt_file(file_path)
+        editor_window = Editor(file_path)  # Create an instance of the Editor window
+        self.root.wait_window(editor_window.window)  # Wait for the editor window to close
 
         # Log opening of the editor with the specific file name
         self.logger.log(f"Opened the editor with file: {file_path}")
@@ -77,7 +82,7 @@ class MyApp:
             self.root.attributes('-fullscreen', True)
         else:
             messagebox.showwarning("Error", "Cannot set full screen mode while the window border is removed.")
-            
+
     def close_app(self):
         # Log application close
         self.logger.log("Application closed")
@@ -88,3 +93,4 @@ if __name__ == '__main__':
     root = tk.Tk()
     app = MyApp(root)
     root.mainloop()
+
