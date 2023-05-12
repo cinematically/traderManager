@@ -20,7 +20,7 @@ class Editor:
         style.map("Custom.Treeview", background=[("selected", "#1E90FF")])
 
         self.treeview = ttk.Treeview(self.window, columns=("category", "class", "buy_price", "sell_price"), style="Custom.Treeview")
-        self.treeview.heading("#0", text="Line #", anchor=tk.CENTER, command=self.sort_lines)
+        self.treeview.heading("#0", text="Line #", anchor=tk.CENTER, command=lambda: self.sort_lines())
         self.treeview.heading("category", text="Category", anchor=tk.CENTER)
         self.treeview.heading("class", text="Class", anchor=tk.CENTER, command=lambda: self.sort_by_column("class"))
         self.treeview.heading("buy_price", text="Buy Price", anchor=tk.CENTER, command=lambda: self.sort_by_column("buy_price"))
@@ -28,58 +28,20 @@ class Editor:
         self.treeview.tag_configure("heading", font=("Arial", 12, "bold"))
         self.treeview.pack(fill="both", expand=True)
 
-        # Bind the mousewheel event to the treeview
-        self.treeview.bind("<MouseWheel>", self.on_mousewheel)
+        # Bind the right-click event to the treeview
+        self.treeview.bind("<Button-3>", self.on_right_click)
 
         self.populate_treeview()
 
         self.window.mainloop()
 
-    def populate_treeview(self):
-        current_category = None
-        with open(self.file_path, "r") as f:
-            for i, line in enumerate(f):
-                line = line.strip()
-                if not line:
-                    continue
-                if line.startswith("<Trader>"):
-                    current_category = line.split("<Trader>")[1].strip()
-                else:
-                    try:
-                        class_name, _, buy_price, sell_price = line.split(",")
-                        self.treeview.insert(
-                            "",
-                            "end",
-                            text=str(i + 1),
-                            values=(current_category, class_name.strip(), buy_price.strip(), sell_price.strip())
-                        )
-                    except ValueError:
-                        continue
-
-    def on_mousewheel(self, event):
-        # Scroll the treeview based on the mousewheel event
-        if event.delta > 0:
-            self.treeview.yview_scroll(-1, "units")
-        else:
-            self.treeview.yview_scroll(1, "units")
-
-    def sort_lines(self):
-        # Sort the lines of the treeview by line number
-        items = [(self.treeview.index(item), item) for item in self.treeview.get_children()]
-        items.sort(key=lambda x: int(x[0]))
-        for index, (_, item) in enumerate(items):
-            self.treeview.move(item, "", index)
-
-    def sort_by_column(self, column):
-        # Sort the treeview by the specified column
-        items = [(self.treeview.set(item, column), item) for item in self.treeview.get_children()]
-        items.sort(key=lambda x: x[0])
-        for index, (_, item) in enumerate(items):
-            self.treeview.move(item, "", index)
-    def save_edited_item(self, item, category, class_name, buy_price, sell_price):
-        # Implementation to save the edited item goes here
-        pass
-
+    def on_right_click(self, event):
+        item = self.treeview.identify("item", event.x, event.y)
+        if item:
+            selected_values = self.treeview.item(item, "values")
+            if selected_values:
+                category, class_name, buy_price, sell_price = selected_values
+                self.edit_dialog(item, category, class_name, buy_price, sell_price)
     def edit_dialog(self, item, category, class_name, buy_price, sell_price):
         dialog = tk.Toplevel()
         dialog.title("Edit Item")
@@ -118,8 +80,88 @@ class Editor:
         sell_entry.insert(tk.END, sell_price)
         sell_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        save_button = ttk.Button(dialog, text="Save", command=lambda: self.save_edited_item(item, category_entry.get(), class_entry.get(), buy_entry.get(), sell_entry.get()))
+        save_button = ttk.Button(dialog, text="Save", command=lambda: self.save_edited_item(item, category_entry, class_entry, buy_entry, sell_entry))
         save_button.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
+
+        self.dialog = dialog  # Store the dialog reference in the instance variable
 
         dialog.mainloop()
 
+    def populate_treeview(self):
+        current_category = None
+        with open(self.file_path, "r") as f:
+            for i, line in enumerate(f):
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith("<Trader>"):
+                    current_category = line.split("<Trader>")[1].strip()
+                else:
+                    try:
+                        class_name, _, buy_price, sell_price = line.split(",")
+                        self.treeview.insert(
+                            "",
+                            "end",
+                            text=str(i + 1),
+                            values=(current_category, class_name.strip(), buy_price.strip(), sell_price.strip())
+                        )
+                    except ValueError:
+                        continue
+
+    def sort_lines(self):
+        # Sort the lines of the treeview by line number
+        items = [(self.treeview.index(item), item) for item in self.treeview.get_children()]
+        items.sort(key=lambda x: int(x[0]))
+        for index, (_, item) in enumerate(items):
+            self.treeview.move(item, "", index)
+
+    def sort_by_column(self, column):
+        # Sort the treeview by the specified column
+        items = [(self.treeview.set(item, column), item) for item in self.treeview.get_children()]
+        items.sort(key=lambda x: x[0])
+        for index, (_, item) in enumerate(items):
+            self.treeview.move(item, "", index)
+
+    def save_edited_item(self, item, category, class_name, buy_price, sell_price):
+        # Get the values from the entry fields
+        category_value = category.get()
+        class_value = class_name.get()
+        buy_price_value = buy_price.get()
+        sell_price_value = sell_price.get()
+
+        # Validate the values (add your own validation logic)
+        if not category_value or not class_value or not buy_price_value or not sell_price_value:
+            messagebox.showwarning("Validation Error", "Please fill in all fields.")
+            return
+
+        # Get the original values
+        original_values = self.treeview.item(item, "values")
+
+        # Update the values in the treeview
+        self.treeview.item(item, values=(category_value, class_value, buy_price_value, sell_price_value))
+
+        # Generate the log message
+        log_message = f"Changed line {item}:"
+        changes = []
+
+        # Check if category value changed
+        if original_values[0] != category_value:
+            changes.append(f"Category: {original_values[0]} -> {category_value}")
+        # Check if class value changed
+        if original_values[1] != class_value:
+            changes.append(f"Class: {original_values[1]} -> {class_value}")
+        # Check if buy price value changed
+        if original_values[2] != buy_price_value:
+            changes.append(f"New Buy Price: {original_values[2]} -> {buy_price_value}")
+        # Check if sell price value changed
+        if original_values[3] != sell_price_value:
+            changes.append(f"New Sell Price: {original_values[3]} -> {sell_price_value}")
+
+        # Log the changes
+        if changes:
+            log_message += "\n" + "\n".join(changes)
+            self.logger.log(log_message)
+
+        # Close the dialog
+        dialog = category.winfo_toplevel()
+        dialog.destroy()
